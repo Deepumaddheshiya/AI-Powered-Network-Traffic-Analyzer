@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Network Traffic Analysis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", system-ui, sans-serif;
+            background: linear-gradient(135deg, #0b1320, #1f3248, #0b1320);
+            color: #ffffff;
+        }
+
+        header {
+            padding: 26px;
+            text-align: center;
+            background: linear-gradient(90deg, #0f2537, #163d56);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 34px;
+            font-weight: 700;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 40px auto;
+            padding: 50px;
+            border-radius: 22px;
+            background: #22364d;
+        }
+
+        .file-name {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+
+        /* ===== STATS ===== */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 30px;
+        }
+
+        .card {
+            background: #1a2a3d;
+            border-radius: 18px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 15px;
+            color: #cdd9e5;
+        }
+
+        .card p {
+            margin-top: 16px;
+            font-size: 30px;
+            font-weight: 700;
+        }
+
+        .attack {
+            color: #ff6b6b;
+        }
+
+        .safe {
+            color: #2ecc71;
+        }
+
+        /* ===== EXPLAINABLE AI ===== */
+        .explain-box {
+            margin-top: 35px;
+            background: #162432;
+            padding: 30px;
+            border-radius: 18px;
+        }
+
+        .explain-box h2 {
+            margin-top: 0;
+            color: #00c6ff;
+        }
+
+        /* ===== RISK BAR ===== */
+        .risk-bar {
+            margin-top: 15px;
+            height: 22px;
+            background: #0f2537;
+            border-radius: 30px;
+            overflow: hidden;
+        }
+
+        .risk-fill {
+            height: 100%;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+            text-align: right;
+            padding-right: 12px;
+            line-height: 22px;
+        }
+
+        /* ===== CHARTS ===== */
+        .charts {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .chart-box {
+            background: #162432;
+            border-radius: 18px;
+            padding: 30px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 360px !important;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: block;
+            margin: 25px auto 0;
+            padding: 18px 48px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .pdf-btn {
+            background: linear-gradient(135deg, #6c5ce7, #341f97);
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>📊 Network Traffic Analysis</h1>
+    </header>
+
+    <div class="container">
+
+        <div class="file-name">
+            File Analyzed: <b>{{ results.filename }}</b>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats">
+            <div class="card">
+                <h3>Total Packets</h3>
+                <p>{{ results.total_packets }}</p>
+            </div>
+
+            <div class="card">
+                <h3>Attack Packets</h3>
+                <p class="attack">{{ results.attack }}</p>
+            </div>
+
+            <div class="card">
+                <h3>Attack %</h3>
+                <p class="{% if results.attack_percentage > 30 %}attack{% else %}safe{% endif %}">
+                    {{ results.attack_percentage }}%
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Confidence</h3>
+                <p>{{ results.confidence }}%</p>
+            </div>
+
+            <div class="card">
+                <h3>Risk Level</h3>
+                <p class="{% if results.risk == 'HIGH' %}attack{% else %}safe{% endif %}">
+                    {{ results.risk }}
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Final Verdict</h3>
+                <p style="
+                padding:8px 18px;
+                border-radius:20px;
+                background:
+                {% if results.final_label == 'attack' %}#ff4d4d{% else %}#2ecc71{% endif %};
+            ">
+                    {{ results.final_label | upper }}
+                </p>
+            </div>
+        </div>
+
+        <!-- EXPLAINABLE AI -->
+        <div class="explain-box">
+            <h2>🧠 Explainable AI – Why this result?</h2>
+            <ul>
+                {% for reason in results.reasons %}
+                <li>🔹 {{ reason }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- SECURITY RECOMMENDATION -->
+        <div class="explain-box" style="border-left:6px solid #00c6ff">
+            <h2>🔐 Security Recommendation</h2>
+
+            {% if results.risk == 'HIGH' %}
+            <ul>
+                <li>🚨 Block source IP immediately</li>
+                <li>Enable firewall & IDS rules</li>
+                <li>Perform forensic investigation</li>
+            </ul>
+
+            {% elif results.risk == 'MEDIUM' %}
+            <ul>
+                <li>⚠ Monitor traffic continuously</li>
+                <li>Enable alerts for anomalies</li>
+                <li>Review recent sessions</li>
+            </ul>
+
+            {% else %}
+            <ul>
+                <li>✅ Traffic is safe</li>
+                <li>No immediate action required</li>
+            </ul>
+            {% endif %}
+        </div>
+
+        <!-- RISK SEVERITY -->
+        <div class="explain-box">
+            <h2>📊 Threat Severity Level</h2>
+            <div class="risk-bar">
+                <div class="risk-fill" style="
+                width:
+                {% if results.risk == 'HIGH' %}90%
+                {% elif results.risk == 'MEDIUM' %}60%
+                {% else %}25%{% endif %};
+                background:
+                {% if results.risk == 'HIGH' %}#ff4d4d
+                {% elif results.risk == 'MEDIUM' %}#ffa502
+                {% else %}#2ecc71{% endif %};
+            ">
+                    {{ results.risk }}
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="charts">
+            <div class="chart-box">
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- BUTTONS -->
+        <a href="{{ report_file }}" class="btn pdf-btn">⬇ Download Security Report (PDF)</a>
+        <a href="/" class="btn back-btn">🔁 Analyze Another File</a>
+
+    </div>
+
+    <script>
+        const totalPackets = {{ results.total_packets }};
+        const attackPackets = {{ results.attack }};
+        const normalPackets = totalPackets - attackPackets;
+
+        const attackPercent = {{ results.attack_percentage }};
+        const normalPercent = 100 - attackPercent;
+
+        new Chart(barChart, {
+            type: "bar",
+            data: {
+                labels: ["Total", "Attack", "Normal"],
+                datasets: [{
+                    data: [totalPackets, attackPackets, normalPackets],
+                    backgroundColor: ["#00c6ff", "#ff6b6b", "#2ecc71"]
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: "#fff" } },
+                    y: { ticks: { color: "#fff" } }
+                }
+            }
+        });
+
+        new Chart(pieChart, {
+            type: "doughnut",
+            data: {
+                labels: ["Attack %", "Normal %"],
+                datasets: [{
+                    data: [attackPercent, normalPercent],
+                    backgroundColor: ["#ff6b6b", "#2ecc71"]
+                }]
+            },
+            options: {
+                cutout: "65%",
+                plugins: {
+                    legend: { labels: { color: "#fff" } }
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
